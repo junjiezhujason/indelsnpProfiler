@@ -3,6 +3,54 @@
 //assume chromosome order is the same in each files!!
 
 
+int * updatecounts_new (int varlen, int callcounts[30])
+    {
+        int i;
+
+        static int allcounts[30];
+        // 0 snp // 1-10 ins //11-20 del
+        // 21 91+ indel
+        // 22 11-30 ins  // 23 31-50 ins  // 24 51-70 ins  // 25 71-90 ins
+        // 26 11-30 del  // 27 31-50 del  // 28 51-70 del  // 29 71-90 del
+
+        for (i = 0; i < 30; i++){ // short indels
+            allcounts[i] = callcounts[i];
+        }
+
+        if(varlen == 0){ //snps
+                allcounts[0]++;
+            }else if(varlen > 0){ //insertion
+                if(varlen <= 10){
+                    allcounts[varlen]++;
+                }else if(varlen <= 30){
+                    allcounts[22]++;
+                }else if(varlen <= 50){
+                    allcounts[23]++;
+                }else if(varlen <= 70){
+                    allcounts[24]++;
+                }else if(varlen <= 90){
+                    allcounts[25]++;
+                }else{
+                    allcounts[21]++;
+                }
+            }else{ //deletion
+                if(varlen >= -10){
+                    allcounts[10-varlen]++;
+                }else if(varlen >= -30){
+                    allcounts[26]++;
+                }else if(varlen >= -50){
+                    allcounts[27]++;
+                }else if(varlen >= -70){
+                    allcounts[28]++;
+                }else if(varlen >= -90){
+                    allcounts[29]++;
+                }else{
+                    allcounts[21]++;
+                }
+            }
+        return allcounts;
+    }
+
 
 int * updatecounts (int varlen, int snpcount, int indelcount[20], int lindelcount[9])
     {
@@ -10,8 +58,9 @@ int * updatecounts (int varlen, int snpcount, int indelcount[20], int lindelcoun
 
         static int allcounts[30];
         // 0 snp // 1-10 ins //11-20 del
-        // 21 11-30 ins  // 22 31-50 ins  // 23 51-70 ins  // 24 71-90 ins
-        // 25 11-30 del  // 26 31-50 del  // 27 51-70 del  // 28 71-90 del
+        // 21 91+ indel
+        // 22 11-30 ins  // 23 31-50 ins  // 24 51-70 ins  // 25 71-90 ins
+        // 26 11-30 del  // 27 31-50 del  // 28 51-70 del  // 29 71-90 del
         if(varlen == 0){ //snps
                 snpcount++;
             }else if(varlen > 0){ //insertion
@@ -76,6 +125,19 @@ int main(int argc, char **argv){
     bool has_match; //duplicated match count as one
 
     int i;
+
+
+    int totaltrue[30];  // false negatives + true positives
+    int concord[30];    // true positive, concordance (true calls)
+    int discord[30];    // discordance (false calls in new positions)
+    int pconcord[30];   // partial concordance (false calls in correct positions
+    int nonconcord[30]; // false negatives (discordance + partial concordance)
+    // initialization
+    for(i = 0; i < 30; i++){
+        totaltrue[i] = concord[i] = discord[i] = pconcord[i] = nonconcord[i] = 0;
+    }
+
+
     int totaltruesnps, calledtruesnps, calledfalsesnps;
     int totaltrueindel[20]; //0-9 ins //10-19 del
     int calledtrueindel[20]; //0-9 ins //10-19 del
@@ -468,13 +530,19 @@ int main(int argc, char **argv){
                 has_match = true;
                 indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
                 // calledtrue
-                updatep = updatecounts(indellen, calledtruesnps, calledtrueindel, lcalledtrueindel);
-                calledtruesnps = *updatep;
+
+                updatep = updatecounts_new(indellen, concord);
+                for (i = 0; i < 30; i++){ // short indels
+                    concord[i] = * (updatep + 1 + i);
+                }
+
+
+                calledtruesnps = concord[0]
                 for (i = 0; i < 20; i++){ // short indels
-                    calledtrueindel[i] = * (updatep + 1 + i);
+                    calledtrueindel[i] = concord[i + 1];
                 }
                 for (i = 0; i < 10; i++){ // short indels
-                    lcalledtrueindel[i] = * (updatep + 1 + 20 + i);
+                    lcalledtrueindel[i] = concord[ 1 + 20 + i];
                 }
 
                 // if(indellen == 0){ //snps
