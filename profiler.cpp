@@ -537,7 +537,7 @@ int main(int argc, char **argv){
                 }
 
 
-                calledtruesnps = concord[0]
+                calledtruesnps = concord[0];
                 for (i = 0; i < 20; i++){ // short indels
                     calledtrueindel[i] = concord[i + 1];
                 }
