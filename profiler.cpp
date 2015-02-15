@@ -3,6 +3,58 @@
 //assume chromosome order is the same in each files!!
 
 
+
+int * updatecounts (int varlen, int snpcount, int indelcount[20], int lindelcount[9])
+    {
+        int i;
+
+        static int allcounts[30];
+        // 0 snp // 1-10 ins //11-20 del
+        // 21 11-30 ins  // 22 31-50 ins  // 23 51-70 ins  // 24 71-90 ins
+        // 25 11-30 del  // 26 31-50 del  // 27 51-70 del  // 28 71-90 del
+        if(varlen == 0){ //snps
+                snpcount++;
+            }else if(varlen > 0){ //insertion
+                if(varlen <= 10){
+                    indelcount[varlen-1]++;
+                }else if(varlen <= 30){
+                    lindelcount[1]++;
+                }else if(varlen <= 50){
+                    lindelcount[2]++;
+                }else if(varlen <= 70){
+                    lindelcount[3]++;
+                }else if(varlen <= 90){
+                    lindelcount[4]++;
+                }else{
+                    lindelcount[0]++;
+                }
+            }else{ //deletion
+                if(varlen >= -10){
+                    indelcount[9-varlen]++;
+                }else if(varlen >= -30){
+                    lindelcount[5]++;
+                }else if(varlen >= -50){
+                    lindelcount[6]++;
+                }else if(varlen >= -70){
+                    lindelcount[7]++;
+                }else if(varlen >= -90){
+                    lindelcount[8]++;
+                }else{
+                    lindelcount[0]++;
+                }
+            }
+        allcounts[0] = snpcount;
+        for (i = 0; i < 20; i++){ // short indels
+            allcounts[i + 1] = indelcount[i];
+        }
+        // long indels
+        for (i = 0; i < 10; i++){ // short indels
+            allcounts[i + 1 + 20] = lindelcount[i];
+        }
+        return allcounts;
+    }
+
+
 int main(int argc, char **argv){
 
     htsFile *indelBCF, *testBCF;
@@ -18,13 +70,13 @@ int main(int argc, char **argv){
 
     float qual_threshold;
     int approx_threshold;
-    int totaltruesnps, calledtruesnps, calledfalsesnps;
     bool ieof, teof;
     int indellen;
     int dALT;
     bool has_match; //duplicated match count as one
 
     int i;
+    int totaltruesnps, calledtruesnps, calledfalsesnps;
     int totaltrueindel[20]; //0-9 ins //10-19 del
     int calledtrueindel[20]; //0-9 ins //10-19 del
     int calledfalseindel[20]; //0-9 ins //10-19 del
@@ -36,8 +88,8 @@ int main(int argc, char **argv){
     int tskip = 0;
     int qskip = 0;
 
-    // ******  test info:
-    
+    // NEW FUNCTION 1 + 20 + 9
+    int *updatep;
 
     char *d;
 
@@ -168,6 +220,7 @@ int main(int argc, char **argv){
         // then the true variant entries left are true (and missed) calls
         if(ib->rid < tb->rid){//rid mismatch
             indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
+
             if(indellen == 0){ //snps
                 totaltruesnps++;
             }else if(indellen > 0){ //insertion
@@ -199,6 +252,10 @@ int main(int argc, char **argv){
                     ltotaltrueindel[0]++;
                 }
             }
+
+
+
+
             inext(); has_match = false;
             continue;
         }
@@ -208,6 +265,8 @@ int main(int argc, char **argv){
         if(ib->rid > tb->rid){//rid mismatch
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
                 indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
+
+
                 if(indellen == 0){ //snps
                     calledfalsesnps++;
                 }else if(indellen > 0){ //insertion
@@ -239,6 +298,9 @@ int main(int argc, char **argv){
                         lcalledfalseindel[0]++;
                     }
                 }
+
+
+
             }
             tnext();
             continue;
@@ -251,12 +313,14 @@ int main(int argc, char **argv){
 
         if(ib->pos < tb->pos - approx_threshold){//pos mismatch
             indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
+
+
+
             if(indellen == 0){ //snps
                 totaltruesnps++;
             }else if(indellen > 0){ //insertion
                 if(indellen <= 10){
                     totaltrueindel[indellen-1]++;
-
                 }else if(indellen <= 30){
                     ltotaltrueindel[1]++;
                 }else if(indellen <= 50){
@@ -283,6 +347,10 @@ int main(int argc, char **argv){
                     ltotaltrueindel[0]++;
                 }
             }
+
+
+
+
             // **** CHECK IF THIS IS TRUE
 //          if(indellen && !has_match) printf("%d\n", ib->pos); //missed indel //FIXME: total of these does not agree with totaltrue - calledtrue
             inext(); has_match = false;
@@ -298,6 +366,11 @@ int main(int argc, char **argv){
 //          printf("pos mismatch %d\n", tb->pos);
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
                 indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
+
+
+
+
+
                 if(indellen == 0){ //snps
                     calledfalsesnps++;
                 }else if(indellen > 0){ //insertion
@@ -329,6 +402,10 @@ int main(int argc, char **argv){
                         lcalledfalseindel[0]++;
                     }
                 }
+
+
+
+
             }
             tnext();
             continue;
@@ -343,6 +420,8 @@ int main(int argc, char **argv){
             indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
             if(dALT > approx_threshold*2){
 //              printf("pos mismatch %d\n", tb->pos);
+
+
                 if(indellen == 0){ //snps
                     calledfalsesnps++;
                 }else if(indellen > 0){ //insertion
@@ -374,48 +453,63 @@ int main(int argc, char **argv){
                         lcalledfalseindel[0]++;
                     }
                 }
+
+
+
             }else{
               if(!has_match){
                 has_match = true;
                 indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
-                if(indellen == 0){ //snps
-                    calledtruesnps++;
-                }else if(indellen > 0){ //insertion
-                    if(indellen <= 10){
-                        calledtrueindel[indellen-1]++;
-                    }else if(indellen <= 30){
-                        lcalledtrueindel[1]++;
-                    }else if(indellen <= 50){
-                        lcalledtrueindel[2]++;
-                    }else if(indellen <= 70){
-                        lcalledtrueindel[3]++;
-                    }else if(indellen <= 90){
-                        lcalledtrueindel[4]++;
-                    }else{
-                        lcalledtrueindel[0]++;
-                    }
-                }else{ //deletion
-                    if(indellen >= -10){
-                        calledtrueindel[9-indellen]++;
-                    }else if(indellen >= -30){
-                        lcalledtrueindel[5]++;
-                    }else if(indellen >= -50){
-                        lcalledtrueindel[6]++;
-                    }else if(indellen >= -70){
-                        lcalledtrueindel[7]++;
-                    }else if(indellen >= -90){
-                        lcalledtrueindel[8]++;
-                    }else{
-                        lcalledtrueindel[0]++;
-                    }
+                // calledtrue
+                updatep = updatecounts(indellen, calledtruesnps, calledtrueindel, calledtrueindel)
+                calledtruesnps = *updatep;
+                for (i = 0; i < 20; i++){ // short indels
+                    calledtrueindel[i] = * (updatep + 1 + i);
                 }
+                for (i = 0; i < 10; i++){ // short indels
+                    calledtrueindel[i] = * (updatep + 1 + 20 + i);
+                }
+
+                // if(indellen == 0){ //snps
+                //     calledtruesnps++;
+                // }else if(indellen > 0){ //insertion
+                //     if(indellen <= 10){
+                //         calledtrueindel[indellen-1]++;
+                //     }else if(indellen <= 30){
+                //         lcalledtrueindel[1]++;
+                //     }else if(indellen <= 50){
+                //         lcalledtrueindel[2]++;
+                //     }else if(indellen <= 70){
+                //         lcalledtrueindel[3]++;
+                //     }else if(indellen <= 90){
+                //         lcalledtrueindel[4]++;
+                //     }else{
+                //         lcalledtrueindel[0]++;
+                //     }
+                // }else{ //deletion
+                //     if(indellen >= -10){
+                //         calledtrueindel[9-indellen]++;
+                //     }else if(indellen >= -30){
+                //         lcalledtrueindel[5]++;
+                //     }else if(indellen >= -50){
+                //         lcalledtrueindel[6]++;
+                //     }else if(indellen >= -70){
+                //         lcalledtrueindel[7]++;
+                //     }else if(indellen >= -90){
+                //         lcalledtrueindel[8]++;
+                //     }else{
+                //         lcalledtrueindel[0]++;
+                //     }
+                // }
+
+
+
               }else{
                 duplicate++;
               }
             }
         }
         tnext();
-        inext();
     }
 
 
@@ -500,6 +594,8 @@ int main(int argc, char **argv){
     }
     return 0;
 }
+
+
 
 
 
