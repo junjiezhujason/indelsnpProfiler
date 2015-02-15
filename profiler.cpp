@@ -461,13 +461,13 @@ int main(int argc, char **argv){
                 has_match = true;
                 indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
                 // calledtrue
-                updatep = updatecounts(indellen, calledtruesnps, calledtrueindel, calledtrueindel);
+                updatep = updatecounts(indellen, calledtruesnps, calledtrueindel, lcalledtrueindel);
                 calledtruesnps = *updatep;
                 for (i = 0; i < 20; i++){ // short indels
                     calledtrueindel[i] = * (updatep + 1 + i);
                 }
                 for (i = 0; i < 10; i++){ // short indels
-                    calledtrueindel[i] = * (updatep + 1 + 20 + i);
+                    lcalledtrueindel[i] = * (updatep + 1 + 20 + i);
                 }
 
                 // if(indellen == 0){ //snps
