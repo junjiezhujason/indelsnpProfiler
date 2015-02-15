@@ -368,40 +368,47 @@ int main(int argc, char **argv){
                 indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
 
 
-
-
-
-                if(indellen == 0){ //snps
-                    calledfalsesnps++;
-                }else if(indellen > 0){ //insertion
-                    if(indellen <= 10){
-                        calledfalseindel[indellen-1]++;
-                    }else if(indellen <= 30){
-                        lcalledfalseindel[1]++;
-                    }else if(indellen <= 50){
-                        lcalledfalseindel[2]++;
-                    }else if(indellen <= 70){
-                        lcalledfalseindel[3]++;
-                    }else if(indellen <= 90){
-                        lcalledfalseindel[4]++;
-                    }else{
-                        lcalledfalseindel[0]++;
-                    }
-                }else{ //deletion
-                    if(indellen >= -10){
-                        calledfalseindel[9-indellen]++;
-                    }else if(indellen >= -30){
-                        lcalledfalseindel[5]++;
-                    }else if(indellen >= -50){
-                        lcalledfalseindel[6]++;
-                    }else if(indellen >= -70){
-                        lcalledfalseindel[7]++;
-                    }else if(indellen >= -90){
-                        lcalledfalseindel[8]++;
-                    }else{
-                        lcalledfalseindel[0]++;
-                    }
+                updatep = updatecounts(indellen, calledfalsesnps, calledfalseindel, lcalledfalseindel);
+                calledfalsesnps = *updatep;
+                for (i = 0; i < 20; i++){ // short indels
+                    calledfalseindel[i] = * (updatep + 1 + i);
                 }
+                for (i = 0; i < 10; i++){ // short indels
+                    lcalledfalseindel[i] = * (updatep + 1 + 20 + i);
+                }
+
+
+                // if(indellen == 0){ //snps
+                //     calledfalsesnps++;
+                // }else if(indellen > 0){ //insertion
+                //     if(indellen <= 10){
+                //         calledfalseindel[indellen-1]++;
+                //     }else if(indellen <= 30){
+                //         lcalledfalseindel[1]++;
+                //     }else if(indellen <= 50){
+                //         lcalledfalseindel[2]++;
+                //     }else if(indellen <= 70){
+                //         lcalledfalseindel[3]++;
+                //     }else if(indellen <= 90){
+                //         lcalledfalseindel[4]++;
+                //     }else{
+                //         lcalledfalseindel[0]++;
+                //     }
+                // }else{ //deletion
+                //     if(indellen >= -10){
+                //         calledfalseindel[9-indellen]++;
+                //     }else if(indellen >= -30){
+                //         lcalledfalseindel[5]++;
+                //     }else if(indellen >= -50){
+                //         lcalledfalseindel[6]++;
+                //     }else if(indellen >= -70){
+                //         lcalledfalseindel[7]++;
+                //     }else if(indellen >= -90){
+                //         lcalledfalseindel[8]++;
+                //     }else{
+                //         lcalledfalseindel[0]++;
+                //     }
+                // }
 
 
 
