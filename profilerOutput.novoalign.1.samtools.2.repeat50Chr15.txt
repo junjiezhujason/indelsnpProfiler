@@ -1,0 +1,44 @@
+============ Filter Info ============
+File: /data/junjie/chr15hg38/masks/repeat50Chr15.txt
+<indel.bcf>skip : 14228
+<test.bcf>skip  : 8866
+============ Thresholds ============
+qual_thres : 0.000000
+qual_skip  : 0
+appr_thres : 5
+============ Error Rates ============
+SNP_FA   : 0.000507
+SNP_MD   : 0.008782
+INDEL_FA : 0.005972
+INDEL_MD : 0.009796
+=============== Counts ==============
+total  calledtrue  calledfalse  missed(total-calledtrue)
+SNP: 
+77662	76980	39	682
+INDEL: 
+16741	16577	99	164
+INDEL breakdown: 
+insertion length 1-10
+839	827	2	12
+824	817	4	7
+822	812	4	10
+845	836	5	9
+843	833	11	10
+829	820	6	9
+864	853	4	11
+873	861	4	12
+818	809	6	9
+847	840	4	7
+deletion length 1-10
+813	797	2	16
+856	850	3	6
+798	793	3	5
+837	829	5	8
+812	808	10	4
+856	851	6	5
+911	906	2	5
+855	847	4	8
+792	791	6	1
+807	797	8	10
+* Duplicates : 11570
+* missed SNPs : 77662
