@@ -37,7 +37,7 @@ int main(int argc, char **argv){
     int qskip = 0;
 
     // ******  test info:
-    int misssnp = 0;
+    
 
     char *d;
 
@@ -170,11 +170,6 @@ int main(int argc, char **argv){
             indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
             if(indellen == 0){ //snps
                 totaltruesnps++;
-
-
-                misssnp++;
-
-
             }else if(indellen > 0){ //insertion
                 if(indellen <= 10){
                     totaltrueindel[indellen-1]++;
@@ -258,12 +253,6 @@ int main(int argc, char **argv){
             indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
             if(indellen == 0){ //snps
                 totaltruesnps++;
-
-
-                    
-                    misssnp++;
-
-
             }else if(indellen > 0){ //insertion
                 if(indellen <= 10){
                     totaltrueindel[indellen-1]++;
@@ -455,13 +444,30 @@ int main(int argc, char **argv){
     printf("appr_thres : %d\n", approx_threshold);
 
     printf("============ Error Rates ============\n"); 
+    // totaltrue   = FN+TP
+    // calledtrue  = TP
+    // calledfalse = FP
+    // missed      = FN
+
+    // FP/(TN+FP) = Type I Error, False Pos. Rate
+    // TN/(TN+FP) = Specitivity 
+    // FN/(FN+TP) = Type II Error  **** = miss detection rate ***
+    // TP/(FN+TP) = Sensitiviy, Recall, True Pos. Rate 
+    // TP/(TP+FP) = Precision, Pos. Pred. Value 
+    // FP/(TP+FP) = False Discovery Proportion
+    
+
     printf("SNP_FA   : %lf\n", 1.0*calledfalsesnps/calledtruesnps);
-    printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps);
+    
+    printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps); // Type II Error
+
     printf("INDEL_FA : %lf\n", 1.0*sum[2]/sum[1]);
+    
+    // False Pos. Rate: FP/(TN+FP). Type I Error, 1-Specificity
     printf("INDEL_MD : %lf\n", 1.0*(sum[0]-sum[1])/sum[0]);
 
     printf("=============== Counts ==============\n"); 
-    printf("total  calledtrue  calledfalse  missed(total-calledtrue)\n");
+    printf("totaltrue\tcalledtrue\tcalledfalse\tmissed(totaltrue-calledtrue)\n");
     printf("SNP: \n");
     printf("%d\t%d\t%d\t%d\n", totaltruesnps, calledtruesnps, calledfalsesnps, totaltruesnps - calledtruesnps);
     printf("INDEL: \n");
@@ -476,8 +482,6 @@ int main(int argc, char **argv){
     
     printf("* Duplicates : %d\n", duplicate);
 
-    // *** test
-    printf("* missed SNPs : %d\n", misssnp);
 
     // END REPORT
     // ============
