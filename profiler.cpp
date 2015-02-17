@@ -1,108 +1,93 @@
 #include"profiler.h"
+#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+using namespace std;
+
 
 //assume chromosome order is the same in each files!!
 
+class VarCount
+{
+public:
+    int snp;
+    int indel[20];
+    int lindel[9];
+    ofstream file;
+    string  filename;
+    VarCount(string name="");  // constructor declaration
+    ~VarCount(); // destructor declaration
 
-int * updatecounts_new (int varlen, int callcounts[30])
-    {
-        int i;
+    void update(int pos, char *allele0, char *allele1);
 
-        static int allcounts[30];
-        // 0 snp // 1-10 ins //11-20 del
-        // 21 91+ indel
-        // 22 11-30 ins  // 23 31-50 ins  // 24 51-70 ins  // 25 71-90 ins
-        // 26 11-30 del  // 27 31-50 del  // 28 51-70 del  // 29 71-90 del
+};
 
-        for (i = 0; i < 30; i++){ // short indels
-            allcounts[i] = callcounts[i];
-        }
-
-        if(varlen == 0){ //snps
-                allcounts[0]++;
-            }else if(varlen > 0){ //insertion
-                if(varlen <= 10){
-                    allcounts[varlen]++;
-                }else if(varlen <= 30){
-                    allcounts[22]++;
-                }else if(varlen <= 50){
-                    allcounts[23]++;
-                }else if(varlen <= 70){
-                    allcounts[24]++;
-                }else if(varlen <= 90){
-                    allcounts[25]++;
-                }else{
-                    allcounts[21]++;
-                }
-            }else{ //deletion
-                if(varlen >= -10){
-                    allcounts[10-varlen]++;
-                }else if(varlen >= -30){
-                    allcounts[26]++;
-                }else if(varlen >= -50){
-                    allcounts[27]++;
-                }else if(varlen >= -70){
-                    allcounts[28]++;
-                }else if(varlen >= -90){
-                    allcounts[29]++;
-                }else{
-                    allcounts[21]++;
-                }
-            }
-        return allcounts;
+VarCount::VarCount(string name)
+{
+    int i;
+    snp = 0;
+    for(i = 0; i < 20; i++){
+        indel[i] = 0;
     }
-
-
-int * updatecounts (int varlen, int snpcount, int indelcount[20], int lindelcount[9])
-    {
-        int i;
-
-        static int allcounts[30];
-        // 0 snp // 1-10 ins //11-20 del
-        // 21 91+ indel
-        // 22 11-30 ins  // 23 31-50 ins  // 24 51-70 ins  // 25 71-90 ins
-        // 26 11-30 del  // 27 31-50 del  // 28 51-70 del  // 29 71-90 del
-        if(varlen == 0){ //snps
-                snpcount++;
-            }else if(varlen > 0){ //insertion
-                if(varlen <= 10){
-                    indelcount[varlen-1]++;
-                }else if(varlen <= 30){
-                    lindelcount[1]++;
-                }else if(varlen <= 50){
-                    lindelcount[2]++;
-                }else if(varlen <= 70){
-                    lindelcount[3]++;
-                }else if(varlen <= 90){
-                    lindelcount[4]++;
-                }else{
-                    lindelcount[0]++;
-                }
-            }else{ //deletion
-                if(varlen >= -10){
-                    indelcount[9-varlen]++;
-                }else if(varlen >= -30){
-                    lindelcount[5]++;
-                }else if(varlen >= -50){
-                    lindelcount[6]++;
-                }else if(varlen >= -70){
-                    lindelcount[7]++;
-                }else if(varlen >= -90){
-                    lindelcount[8]++;
-                }else{
-                    lindelcount[0]++;
-                }
-            }
-        allcounts[0] = snpcount;
-        for (i = 0; i < 20; i++){ // short indels
-            allcounts[i + 1] = indelcount[i];
-        }
-        // long indels
-        for (i = 0; i < 10; i++){ // short indels
-            allcounts[i + 1 + 20] = lindelcount[i];
-        }
-        return allcounts;
+    for(i = 0; i < 9; i++){
+        lindel[i] = 0;
     }
+    filename = name;
+    if (filename != ""){     
+        file.open(filename);
+        //cout << "File Open: " << name << endl;
+    }
+}
 
+VarCount::~VarCount(void)
+{ 
+    if (filename != ""){
+        file.close();
+        //cout << "File Closed: " << filename << endl;
+    }
+}
+
+
+void VarCount::update(int pos, char *allele0, char *allele1)
+{ 
+    int varlen;
+    varlen = strlen(allele1) - strlen(allele0);
+    if(varlen == 0){ //snps
+        snp++;
+    }else if(varlen > 0){ //insertion
+        if(varlen <= 10){ 
+            indel[varlen-1]++; // short 
+        }else if(varlen <= 30){
+            lindel[1]++;
+        }else if(varlen <= 50){
+            lindel[2]++;
+        }else if(varlen <= 70){
+            lindel[3]++;
+        }else if(varlen <= 90){
+            lindel[4]++;
+        }else{
+            lindel[0]++;
+        }
+    }else{ //deletion
+        if(varlen >= -10){
+            indel[9-varlen]++; // short
+        }else if(varlen >= -30){
+            lindel[5]++;
+        }else if(varlen >= -50){
+            lindel[6]++;
+        }else if(varlen >= -70){
+            lindel[7]++;
+        }else if(varlen >= -90){
+            lindel[8]++;
+        }else{
+            lindel[0]++;
+        }
+    }
+    if (filename != ""){     
+        file << pos << "\t" << allele0 << "\t" << allele1 << endl;
+    }
+}
 
 int main(int argc, char **argv){
 
@@ -127,15 +112,12 @@ int main(int argc, char **argv){
     int i;
 
 
-    int totaltrue[30];  // false negatives + true positives
-    int concord[30];    // true positive, concordance (true calls)
-    int discord[30];    // discordance (false calls in new positions)
-    int pconcord[30];   // partial concordance (false calls in correct positions
-    int nonconcord[30]; // false negatives (discordance + partial concordance)
-    // initialization
-    for(i = 0; i < 30; i++){
-        totaltrue[i] = concord[i] = discord[i] = pconcord[i] = nonconcord[i] = 0;
-    }
+    VarCount totaltrue;                              // false negatives + true positives
+    VarCount concord;                                // true positive, concordance (true calls)
+    VarCount discord("catagory/discord.txt");        // discordance (false calls in new positions)
+    VarCount pconcord("catagory/pconcord.txt");      // partial concordance (false calls in correct positions
+    VarCount nonconcord("catagory/nonconcord.txt");  // false negatives (discordance + partial concordance)
+    
 
 
     int totaltruesnps, calledtruesnps, calledfalsesnps;
@@ -145,6 +127,8 @@ int main(int argc, char **argv){
     int ltotaltrueindel[9]; //1 11-30 ins //2 31-50 ins //3 51-70 ins //4 71-90 ins
     int lcalledtrueindel[9]; //5 11-30 del //6 31-50 del //7 51-70 del //8 71-90 del
     int lcalledfalseindel[9]; //0 91+ indel
+    
+
     int duplicate = 0;
     int iskip = 0;
     int tskip = 0;
@@ -281,43 +265,7 @@ int main(int argc, char **argv){
         // if all of the called variant entries have been looked up (EOF),
         // then the true variant entries left are true (and missed) calls
         if(ib->rid < tb->rid){//rid mismatch
-            indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
-
-            if(indellen == 0){ //snps
-                totaltruesnps++;
-            }else if(indellen > 0){ //insertion
-                if(indellen <= 10){
-                    totaltrueindel[indellen-1]++;
-                }else if(indellen <= 30){
-                    ltotaltrueindel[1]++;
-                }else if(indellen <= 50){
-                    ltotaltrueindel[2]++;
-                }else if(indellen <= 70){
-                    ltotaltrueindel[3]++;
-                }else if(indellen <= 90){
-                    ltotaltrueindel[4]++;
-                }else{
-                    ltotaltrueindel[0]++;
-                }
-            }else{ //deletion
-                if(indellen >= -10){
-                    totaltrueindel[9-indellen]++;
-                }else if(indellen >= -30){
-                    ltotaltrueindel[5]++;
-                }else if(indellen >= -50){
-                    ltotaltrueindel[6]++;
-                }else if(indellen >= -70){
-                    ltotaltrueindel[7]++;
-                }else if(indellen >= -90){
-                    ltotaltrueindel[8]++;
-                }else{
-                    ltotaltrueindel[0]++;
-                }
-            }
-
-
-
-
+            totaltrue.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
             inext(); has_match = false;
             continue;
         }
@@ -326,43 +274,7 @@ int main(int argc, char **argv){
         // then the called variant entries left are false calls
         if(ib->rid > tb->rid){//rid mismatch
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
-                indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
-
-
-                if(indellen == 0){ //snps
-                    calledfalsesnps++;
-                }else if(indellen > 0){ //insertion
-                    if(indellen <= 10){
-                        calledfalseindel[indellen-1]++;
-                    }else if(indellen <= 30){
-                        lcalledfalseindel[1]++;
-                    }else if(indellen <= 50){
-                        lcalledfalseindel[2]++;
-                    }else if(indellen <= 70){
-                        lcalledfalseindel[3]++;
-                    }else if(indellen <= 90){
-                        lcalledfalseindel[4]++;
-                    }else{
-                        lcalledfalseindel[0]++;
-                    }
-                }else{ //deletion
-                    if(indellen >= -10){
-                        calledfalseindel[9-indellen]++;
-                    }else if(indellen >= -30){
-                        lcalledfalseindel[5]++;
-                    }else if(indellen >= -50){
-                        lcalledfalseindel[6]++;
-                    }else if(indellen >= -70){
-                        lcalledfalseindel[7]++;
-                    }else if(indellen >= -90){
-                        lcalledfalseindel[8]++;
-                    }else{
-                        lcalledfalseindel[0]++;
-                    }
-                }
-
-
-
+                discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]);
             }
             tnext();
             continue;
@@ -374,47 +286,7 @@ int main(int argc, char **argv){
         // this counts as true (and missed) calls
 
         if(ib->pos < tb->pos - approx_threshold){//pos mismatch
-            indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
-
-
-
-            if(indellen == 0){ //snps
-                totaltruesnps++;
-            }else if(indellen > 0){ //insertion
-                if(indellen <= 10){
-                    totaltrueindel[indellen-1]++;
-                }else if(indellen <= 30){
-                    ltotaltrueindel[1]++;
-                }else if(indellen <= 50){
-                    ltotaltrueindel[2]++;
-                }else if(indellen <= 70){
-                    ltotaltrueindel[3]++;
-                }else if(indellen <= 90){
-                    ltotaltrueindel[4]++;
-                }else{
-                    ltotaltrueindel[0]++;
-                }
-            }else{ //deletion
-                if(indellen >= -10){
-                    totaltrueindel[9-indellen]++;
-                }else if(indellen >= -30){
-                    ltotaltrueindel[5]++;
-                }else if(indellen >= -50){
-                    ltotaltrueindel[6]++;
-                }else if(indellen >= -70){
-                    ltotaltrueindel[7]++;
-                }else if(indellen >= -90){
-                    ltotaltrueindel[8]++;
-                }else{
-                    ltotaltrueindel[0]++;
-                }
-            }
-
-
-
-
-            // **** CHECK IF THIS IS TRUE
-//          if(indellen && !has_match) printf("%d\n", ib->pos); //missed indel //FIXME: total of these does not agree with totaltrue - calledtrue
+            totaltrue.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
             inext(); has_match = false;
             continue;
         }
@@ -427,54 +299,7 @@ int main(int argc, char **argv){
         if(ib->pos > tb->pos + approx_threshold){ //pos mismatch
 //          printf("pos mismatch %d\n", tb->pos);
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
-                indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
-
-
-                updatep = updatecounts(indellen, calledfalsesnps, calledfalseindel, lcalledfalseindel);
-                calledfalsesnps = *updatep;
-                for (i = 0; i < 20; i++){ // short indels
-                    calledfalseindel[i] = * (updatep + 1 + i);
-                }
-                for (i = 0; i < 10; i++){ // short indels
-                    lcalledfalseindel[i] = * (updatep + 1 + 20 + i);
-                }
-
-
-                // if(indellen == 0){ //snps
-                //     calledfalsesnps++;
-                // }else if(indellen > 0){ //insertion
-                //     if(indellen <= 10){
-                //         calledfalseindel[indellen-1]++;
-                //     }else if(indellen <= 30){
-                //         lcalledfalseindel[1]++;
-                //     }else if(indellen <= 50){
-                //         lcalledfalseindel[2]++;
-                //     }else if(indellen <= 70){
-                //         lcalledfalseindel[3]++;
-                //     }else if(indellen <= 90){
-                //         lcalledfalseindel[4]++;
-                //     }else{
-                //         lcalledfalseindel[0]++;
-                //     }
-                // }else{ //deletion
-                //     if(indellen >= -10){
-                //         calledfalseindel[9-indellen]++;
-                //     }else if(indellen >= -30){
-                //         lcalledfalseindel[5]++;
-                //     }else if(indellen >= -50){
-                //         lcalledfalseindel[6]++;
-                //     }else if(indellen >= -70){
-                //         lcalledfalseindel[7]++;
-                //     }else if(indellen >= -90){
-                //         lcalledfalseindel[8]++;
-                //     }else{
-                //         lcalledfalseindel[0]++;
-                //     }
-                // }
-
-
-
-
+                discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]);
             }
             tnext();
             continue;
@@ -486,99 +311,12 @@ int main(int argc, char **argv){
 
         for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
             dALT = distance(ib->d.allele[1], tb->d.allele[i]);
-            indellen = strlen(tb->d.allele[i]) - strlen(tb->d.allele[0]);
             if(dALT > approx_threshold*2){
-//              printf("pos mismatch %d\n", tb->pos);
-
-
-                if(indellen == 0){ //snps
-                    calledfalsesnps++;
-                }else if(indellen > 0){ //insertion
-                    if(indellen <= 10){
-                        calledfalseindel[indellen-1]++;
-                    }else if(indellen <= 30){
-                        lcalledfalseindel[1]++;
-                    }else if(indellen <= 50){
-                        lcalledfalseindel[2]++;
-                    }else if(indellen <= 70){
-                        lcalledfalseindel[3]++;
-                    }else if(indellen <= 90){
-                        lcalledfalseindel[4]++;
-                    }else{
-                        lcalledfalseindel[0]++;
-                    }
-                }else{ //deletion
-                    if(indellen >= -10){
-                        calledfalseindel[9-indellen]++;
-                    }else if(indellen >= -30){
-                        lcalledfalseindel[5]++;
-                    }else if(indellen >= -50){
-                        lcalledfalseindel[6]++;
-                    }else if(indellen >= -70){
-                        lcalledfalseindel[7]++;
-                    }else if(indellen >= -90){
-                        lcalledfalseindel[8]++;
-                    }else{
-                        lcalledfalseindel[0]++;
-                    }
-                }
-
-
-
+                discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); // FIX THIS LATER TO pconcord
             }else{
               if(!has_match){
                 has_match = true;
-                indellen = strlen(ib->d.allele[1]) - strlen(ib->d.allele[0]);
-                // calledtrue
-
-                updatep = updatecounts_new(indellen, concord);
-                for (i = 0; i < 30; i++){ // short indels
-                    concord[i] = * (updatep + 1 + i);
-                }
-
-
-                calledtruesnps = concord[0];
-                for (i = 0; i < 20; i++){ // short indels
-                    calledtrueindel[i] = concord[i + 1];
-                }
-                for (i = 0; i < 10; i++){ // short indels
-                    lcalledtrueindel[i] = concord[ 1 + 20 + i];
-                }
-
-                // if(indellen == 0){ //snps
-                //     calledtruesnps++;
-                // }else if(indellen > 0){ //insertion
-                //     if(indellen <= 10){
-                //         calledtrueindel[indellen-1]++;
-                //     }else if(indellen <= 30){
-                //         lcalledtrueindel[1]++;
-                //     }else if(indellen <= 50){
-                //         lcalledtrueindel[2]++;
-                //     }else if(indellen <= 70){
-                //         lcalledtrueindel[3]++;
-                //     }else if(indellen <= 90){
-                //         lcalledtrueindel[4]++;
-                //     }else{
-                //         lcalledtrueindel[0]++;
-                //     }
-                // }else{ //deletion
-                //     if(indellen >= -10){
-                //         calledtrueindel[9-indellen]++;
-                //     }else if(indellen >= -30){
-                //         lcalledtrueindel[5]++;
-                //     }else if(indellen >= -50){
-                //         lcalledtrueindel[6]++;
-                //     }else if(indellen >= -70){
-                //         lcalledtrueindel[7]++;
-                //     }else if(indellen >= -90){
-                //         lcalledtrueindel[8]++;
-                //     }else{
-                //         lcalledtrueindel[0]++;
-                //     }
-                // }
-
-
-
+                concord.update(ib->pos, ib->d.allele[0], ib->d.allele[1]);
               }else{
                 duplicate++;
               }
@@ -588,17 +326,24 @@ int main(int argc, char **argv){
     }
 
 
+
+
     // ============
     // BEGIN REPORT
 
 
     int sum[6];
     sum[0] = sum[1] = sum[2] = 0;
-    for(i = 0; i <= 19; i++){    
-        sum[0] += totaltrueindel[i];
-        sum[1] += calledtrueindel[i];
-        sum[2] += calledfalseindel[i];
+    for(i = 0; i < 20; i++){    
+        sum[0] += totaltrue.indel[i];
+        sum[1] += concord.indel[i];
+        sum[2] += discord.indel[i];
     }
+
+    totaltruesnps = totaltrue.snp;
+    calledtruesnps = concord.snp;
+    calledfalsesnps = discord.snp;
+
 
 
     printf("============ Filter Info ============\n");
