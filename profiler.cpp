@@ -1,5 +1,5 @@
 #include"profiler.h"
-#include <fstream>
+#include <fstream.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
