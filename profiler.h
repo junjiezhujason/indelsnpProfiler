@@ -5,6 +5,7 @@
 #include"hts.h"
 #include"simpleRepeat.h"
 
+
 #define MULTI_SEQ 0
 
 #define MAX(a,b) (a)>(b)?(a):(b)

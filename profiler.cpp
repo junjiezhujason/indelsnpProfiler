@@ -404,7 +404,7 @@ int main(int argc, char **argv){
 
     bcf_hdr_destroy(ih);
     bcf_hdr_destroy(th);
-    bcf_destroy(ib);
+    bcf_destroy(ib); 
     bcf_destroy(tb);
     bcf_close(indelBCF);
     bcf_close(testBCF);
