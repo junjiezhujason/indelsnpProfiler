@@ -1,5 +1,5 @@
 #include"profiler.h"
-#include <fstream.h>
+#include<fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,7 +35,7 @@ VarCount::VarCount(string name)
     }
     filename = name;
     if (filename != ""){     
-        file.open(filename);
+        file.open(filename.c_str());
         //cout << "File Open: " << name << endl;
     }
 }
