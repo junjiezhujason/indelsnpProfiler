@@ -107,6 +107,8 @@ int main(int argc, char **argv){
     int indellen;
     int dALT;
     bool has_match; //duplicated match count as one
+    bool match_pos; //duplicated match count as one
+
 
     int i;
 
@@ -256,7 +258,7 @@ int main(int argc, char **argv){
         }
         if(tb->qual < qual_threshold){
             qskip++;
-            tnext();
+            tnext(); 
             continue;
         }
 
@@ -268,7 +270,7 @@ int main(int argc, char **argv){
             if (!has_match){ // if previously we had a match, then DO NOT count is as missed
                 missing.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
             }
-            inext(); has_match = false;
+            inext(); has_match = false; match_pos = false;
             continue;
         }
 
@@ -278,7 +280,7 @@ int main(int argc, char **argv){
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
                 discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]);
             }
-            tnext();
+            tnext(); match_pos = false;
             continue;
         }
 
@@ -287,10 +289,10 @@ int main(int argc, char **argv){
         // this counts as true (and missed) calls
         if(ib->pos < tb->pos - approx_threshold){//pos mismatch
             totaltrue.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
-            if (!has_match){ // if previously we had a match, then DO NOT count is as missed
+            if (!match_pos){ // if previously we had a match, then DO NOT count it as missed
                 missing.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
             }
-            inext(); has_match = false;
+            inext(); has_match = false; match_pos = false;
             continue;
         }
 
@@ -302,7 +304,7 @@ int main(int argc, char **argv){
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
                 discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]);
             }
-            tnext();
+            tnext(); match_pos = true;
             continue;
         }
 
@@ -310,7 +312,7 @@ int main(int argc, char **argv){
         for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
             dALT = distance(ib->d.allele[1], tb->d.allele[i]);
             if(dALT > approx_threshold*2){
-                pconcord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); // FIX THIS LATER TO pconcord
+                pconcord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); 
             }else{
               // there might be multiple entries in <test.bcf> that match an entry in <indel.bcf>
               if(!has_match){ 
@@ -321,7 +323,7 @@ int main(int argc, char **argv){
               }
             }
         }
-        tnext();
+        tnext(); match_pos = true;
     }
 
 
