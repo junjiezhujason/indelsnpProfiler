@@ -1,26 +1,6 @@
 #include"profiler.h"
-#include<fstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-using namespace std;
-
 
 //assume chromosome order is the same in each files!!
-
-class VarCount
-{
-public:
-    int snp;
-    int indel[20];
-    int lindel[9];
-    ofstream file;
-    string  filename;
-    VarCount(string name="");  // constructor declaration
-    ~VarCount(); // destructor declaration
-
-    void update(int pos, char *allele0, char *allele1);
-};
 
 VarCount::VarCount(string name)
 {
@@ -107,7 +87,7 @@ int main(int argc, char **argv){
     int indellen;
     int dALT;
     bool has_match; //duplicated match count as one
-    bool match_pos; //duplicated match count as one
+    bool match_pos; 
 
 
     int i;
@@ -124,9 +104,6 @@ int main(int argc, char **argv){
     int iskip = 0;
     int tskip = 0;
     int qskip = 0;
-
-    // NEW FUNCTION 1 + 20 + 9
-    int *updatep;
 
     char *d;
 
@@ -283,7 +260,6 @@ int main(int argc, char **argv){
         // the true variant, then move to the pos. of next called variant
         // this counts as false calls
         if(ib->pos > tb->pos + approx_threshold){ //pos mismatch
-//          printf("pos mismatch %d\n", tb->pos);
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
                 discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]);
             }
@@ -292,13 +268,13 @@ int main(int argc, char **argv){
         }
 
         // pos of true and called match within +- approx_threshold
+        // there might be multiple entries in <test.bcf> that match an entry in <indel.bcf>
         for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
             dALT = distance(ib->d.allele[1], tb->d.allele[i]);
             if(dALT > approx_threshold*2){
                 pconcord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); 
             }else{
-              // there might be multiple entries in <test.bcf> that match an entry in <indel.bcf>
-              if(!has_match){ 
+              if(!has_match){      
                 has_match = true;
                 concord.update(ib->pos, ib->d.allele[0], ib->d.allele[1]);
               }else{  // if we have already recorded the matched indel, we should not record again
@@ -362,7 +338,7 @@ int main(int argc, char **argv){
 
 
     printf("=============== Counts ==============\n"); 
-    printf("totaltrue/concordance/p-concordance/discordance/missed\n");
+    printf("totaltrue/concordance/p-concordance/discordance/missing\n");
     printf("---------------- SNP ----------------\n");
     printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.snp, concord.snp, pconcord.snp, discord.snp, missing.snp);
     printf("--------------- INDEL ----------------\n");
