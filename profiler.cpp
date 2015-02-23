@@ -374,7 +374,7 @@ int main(int argc, char **argv){
     printf("SNP_FA   : %lf\n", 1.0*calledfalsesnps/calledtruesnps);
     
     printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps); // Type II Error
-
+    // 
     printf("INDEL_FA : %lf\n", 1.0*sum[2]/sum[1]);
     
     // False Pos. Rate: FP/(TN+FP). Type I Error, 1-Specificity
