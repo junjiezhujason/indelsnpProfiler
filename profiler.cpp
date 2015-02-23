@@ -112,7 +112,6 @@ int main(int argc, char **argv){
 
     int i;
 
-
     VarCount totaltrue;                              // false negatives + true positives
     VarCount concord;                                // true positive, concordance (true calls)
     VarCount discord("catagory/discord.txt");        // discordance (false calls in new positions)
@@ -120,15 +119,6 @@ int main(int argc, char **argv){
     VarCount nonconcord("catagory/nonconcord.txt");  // false negatives (discordance + partial concordance)
     VarCount missing("catagory/missing.txt");        // variants in the reference missed by callers
     
-
-
-    int totaltruesnps, calledtruesnps, calledfalsesnps;
-    int totaltrueindel[20]; //0-9 ins //10-19 del
-    int calledtrueindel[20]; //0-9 ins //10-19 del
-    int calledfalseindel[20]; //0-9 ins //10-19 del
-    int ltotaltrueindel[9]; //1 11-30 ins //2 31-50 ins //3 51-70 ins //4 71-90 ins
-    int lcalledtrueindel[9]; //5 11-30 del //6 31-50 del //7 51-70 del //8 71-90 del
-    int lcalledfalseindel[9]; //0 91+ indel
     
     int duplicate = 0;
     int iskip = 0;
@@ -184,13 +174,6 @@ int main(int argc, char **argv){
     }
 
     ieof = teof = false;
-    totaltruesnps = calledtruesnps = calledfalsesnps = 0;
-    for(i = 0; i <= 19; i++){
-        totaltrueindel[i] = calledtrueindel[i] = calledfalseindel[i] = 0;
-    }
-    for(i = 0; i <= 8; i++){
-        ltotaltrueindel[i] = lcalledtrueindel[i] = lcalledfalseindel[i] = 0;
-    }
 
     ib = bcf_init();
     tb = bcf_init();
@@ -341,10 +324,6 @@ int main(int argc, char **argv){
         sum[2] += pconcord.indel[i];
     }
 
-    totaltruesnps = totaltrue.snp;
-    calledtruesnps = concord.snp;
-    calledfalsesnps = discord.snp + pconcord.snp;
-
 
 
     printf("============ Filter Info ============\n");
@@ -373,30 +352,28 @@ int main(int argc, char **argv){
     // FP/(TP+FP) = False Discovery Proportion
     
 
-    printf("SNP_FA   : %lf\n", 1.0*calledfalsesnps/calledtruesnps);
+    //printf("SNP_FA   : %lf\n", 1.0*calledfalsesnps/calledtruesnps);
     
-    printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps); // Type II Error
+    //printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps); // Type II Error
     // 
-    printf("INDEL_FA : %lf\n", 1.0*sum[2]/sum[1]);
+    //printf("INDEL_FA : %lf\n", 1.0*sum[2]/sum[1]);
     
     // False Pos. Rate: FP/(TN+FP). Type I Error, 1-Specificity
-    printf("INDEL_MD : %lf\n", 1.0*(sum[0]-sum[1])/sum[0]);
+    //printf("INDEL_MD : %lf\n", 1.0*(sum[0]-sum[1])/sum[0]);
 
     printf("=============== Counts ==============\n"); 
-    printf("totaltrue\tcalledtrue\tcalledfalse\tmissed(totaltrue-calledtrue)\n");
+    printf("totaltrue\tdetected\tmissed\tfalsecalls(# with correct position)\n");
     printf("SNP: \n");
-    //printf("%d\t%d\t%d\t%d\n", totaltruesnps, calledtruesnps, calledfalsesnps, totaltruesnps - calledtruesnps);
-    printf("%d\t%d\t%d\t%d\n", totaltruesnps, calledtruesnps, calledfalsesnps, missing.snp);
+    printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.snp, concord.snp, missing.snp, discord.snp+pconcord.snp, pconcord.snp);
     printf("INDEL: \n");
     printf("%d\t%d\t%d\t%d\n", sum[0], sum[1], sum[2], sum[0] - sum[1]);
     printf("INDEL breakdown: \n");
     printf("insertion length 1-10\n");
     for(i = 0; i <= 9; i++)
-        printf("%d\t%d\t%d\t%d\n", totaltrueindel[i], calledtrueindel[i], calledfalseindel[i], totaltrueindel[i] - calledtrueindel[i]);
+        printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.indel[i], concord.indel[i], missing.indel[i], discord.indel[i]+pconcord.indel[i], pconcord.indel[i]);
     printf("deletion length 1-10\n");
     for(i = 10; i <= 19; i++)
-        printf("%d\t%d\t%d\t%d\n", totaltrueindel[i], calledtrueindel[i], calledfalseindel[i], totaltrueindel[i] - calledtrueindel[i]);
-    
+        printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.indel[i], concord.indel[i], missing.indel[i], discord.indel[i]+pconcord.indel[i], pconcord.indel[i]);
     printf("* Duplicates : %d\n", duplicate);
 
     // END REPORT

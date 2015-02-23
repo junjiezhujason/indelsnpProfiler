@@ -1,6 +1,6 @@
 # no .o files
 *.o
-
+profiler
 # ignore all files in the build/ directory: build/
 
 # ignore doc/notes.txt, but not doc/server/arch.txt: doc/*.txt
