@@ -20,7 +20,6 @@ public:
     ~VarCount(); // destructor declaration
 
     void update(int pos, char *allele0, char *allele1);
-
 };
 
 VarCount::VarCount(string name)
@@ -115,8 +114,9 @@ int main(int argc, char **argv){
     VarCount totaltrue;                              // false negatives + true positives
     VarCount concord;                                // true positive, concordance (true calls)
     VarCount discord("catagory/discord.txt");        // discordance (false calls in new positions)
-    VarCount pconcord("catagory/pconcord.txt");      // partial concordance (false calls in correct positions
+    VarCount pconcord("catagory/pconcord.txt");      // partial concordance (false calls in correct positions)
     VarCount nonconcord("catagory/nonconcord.txt");  // false negatives (discordance + partial concordance)
+    VarCount missing("catagory/missing.txt");        // variants in the reference missed by callers
     
 
 
@@ -128,7 +128,6 @@ int main(int argc, char **argv){
     int lcalledtrueindel[9]; //5 11-30 del //6 31-50 del //7 51-70 del //8 71-90 del
     int lcalledfalseindel[9]; //0 91+ indel
     
-
     int duplicate = 0;
     int iskip = 0;
     int tskip = 0;
@@ -266,6 +265,9 @@ int main(int argc, char **argv){
         // then the true variant entries left are true (and missed) calls
         if(ib->rid < tb->rid){//rid mismatch
             totaltrue.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
+            if (!has_match){ // if previously we had a match, then DO NOT count is as missed
+                missing.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
+            }
             inext(); has_match = false;
             continue;
         }
@@ -280,22 +282,21 @@ int main(int argc, char **argv){
             continue;
         }
 
-
         // if the pos of true variant location has not reached the pos of 
         // the called variant, then move to the pos. of next true variant
         // this counts as true (and missed) calls
-
         if(ib->pos < tb->pos - approx_threshold){//pos mismatch
             totaltrue.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
+            if (!has_match){ // if previously we had a match, then DO NOT count is as missed
+                missing.update(ib->pos, ib->d.allele[0],ib->d.allele[1]);
+            }
             inext(); has_match = false;
             continue;
         }
 
-
         // if the pos of called variant location has not reached the pos of 
         // the true variant, then move to the pos. of next called variant
         // this counts as false calls
-
         if(ib->pos > tb->pos + approx_threshold){ //pos mismatch
 //          printf("pos mismatch %d\n", tb->pos);
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
@@ -305,19 +306,17 @@ int main(int argc, char **argv){
             continue;
         }
 
-
         // pos of true and called match within +- approx_threshold
-        //
-
         for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
             dALT = distance(ib->d.allele[1], tb->d.allele[i]);
             if(dALT > approx_threshold*2){
-                discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); // FIX THIS LATER TO pconcord
+                pconcord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); // FIX THIS LATER TO pconcord
             }else{
-              if(!has_match){
+              // there might be multiple entries in <test.bcf> that match an entry in <indel.bcf>
+              if(!has_match){ 
                 has_match = true;
                 concord.update(ib->pos, ib->d.allele[0], ib->d.allele[1]);
-              }else{
+              }else{  // if we have already recorded the matched indel, we should not record again
                 duplicate++;
               }
             }
@@ -331,18 +330,18 @@ int main(int argc, char **argv){
     // ============
     // BEGIN REPORT
 
-
     int sum[6];
     sum[0] = sum[1] = sum[2] = 0;
     for(i = 0; i < 20; i++){    
         sum[0] += totaltrue.indel[i];
         sum[1] += concord.indel[i];
         sum[2] += discord.indel[i];
+        sum[2] += pconcord.indel[i];
     }
 
     totaltruesnps = totaltrue.snp;
     calledtruesnps = concord.snp;
-    calledfalsesnps = discord.snp;
+    calledfalsesnps = discord.snp + pconcord.snp;
 
 
 
@@ -384,7 +383,8 @@ int main(int argc, char **argv){
     printf("=============== Counts ==============\n"); 
     printf("totaltrue\tcalledtrue\tcalledfalse\tmissed(totaltrue-calledtrue)\n");
     printf("SNP: \n");
-    printf("%d\t%d\t%d\t%d\n", totaltruesnps, calledtruesnps, calledfalsesnps, totaltruesnps - calledtruesnps);
+    //printf("%d\t%d\t%d\t%d\n", totaltruesnps, calledtruesnps, calledfalsesnps, totaltruesnps - calledtruesnps);
+    printf("%d\t%d\t%d\t%d\n", totaltruesnps, calledtruesnps, calledfalsesnps, missing.snp);
     printf("INDEL: \n");
     printf("%d\t%d\t%d\t%d\n", sum[0], sum[1], sum[2], sum[0] - sum[1]);
     printf("INDEL breakdown: \n");
@@ -396,7 +396,6 @@ int main(int argc, char **argv){
         printf("%d\t%d\t%d\t%d\n", totaltrueindel[i], calledtrueindel[i], calledfalseindel[i], totaltrueindel[i] - calledtrueindel[i]);
     
     printf("* Duplicates : %d\n", duplicate);
-
 
     // END REPORT
     // ============
