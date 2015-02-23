@@ -1,26 +1,6 @@
 #include"profiler.h"
-#include<fstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-using namespace std;
-
 
 //assume chromosome order is the same in each files!!
-
-class VarCount
-{
-public:
-    int snp;
-    int indel[20];
-    int lindel[9];
-    ofstream file;
-    string  filename;
-    VarCount(string name="");  // constructor declaration
-    ~VarCount(); // destructor declaration
-
-    void update(int pos, char *allele0, char *allele1);
-};
 
 VarCount::VarCount(string name)
 {
@@ -107,7 +87,7 @@ int main(int argc, char **argv){
     int indellen;
     int dALT;
     bool has_match; //duplicated match count as one
-    bool match_pos; //duplicated match count as one
+    bool match_pos; 
 
 
     int i;
@@ -124,9 +104,6 @@ int main(int argc, char **argv){
     int iskip = 0;
     int tskip = 0;
     int qskip = 0;
-
-    // NEW FUNCTION 1 + 20 + 9
-    int *updatep;
 
     char *d;
 
@@ -283,7 +260,6 @@ int main(int argc, char **argv){
         // the true variant, then move to the pos. of next called variant
         // this counts as false calls
         if(ib->pos > tb->pos + approx_threshold){ //pos mismatch
-//          printf("pos mismatch %d\n", tb->pos);
             for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
                 discord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]);
             }
@@ -292,13 +268,13 @@ int main(int argc, char **argv){
         }
 
         // pos of true and called match within +- approx_threshold
+        // there might be multiple entries in <test.bcf> that match an entry in <indel.bcf>
         for(i = 1; i < tb->n_allele; i++){ //multi ALT on same test.bcf entry
             dALT = distance(ib->d.allele[1], tb->d.allele[i]);
             if(dALT > approx_threshold*2){
                 pconcord.update(tb->pos, tb->d.allele[0], tb->d.allele[i]); 
             }else{
-              // there might be multiple entries in <test.bcf> that match an entry in <indel.bcf>
-              if(!has_match){ 
+              if(!has_match){      
                 has_match = true;
                 concord.update(ib->pos, ib->d.allele[0], ib->d.allele[1]);
               }else{  // if we have already recorded the matched indel, we should not record again
@@ -320,8 +296,9 @@ int main(int argc, char **argv){
     for(i = 0; i < 20; i++){    
         sum[0] += totaltrue.indel[i];
         sum[1] += concord.indel[i];
-        sum[2] += discord.indel[i];
         sum[2] += pconcord.indel[i];
+        sum[3] += discord.indel[i];
+        sum[4] += missing.indel[i];
     }
 
 
@@ -344,7 +321,7 @@ int main(int argc, char **argv){
     // calledfalse = FP
     // missed      = FN
 
-    // FP/(TN+FP) = Type I Error, False Pos. Rate
+    // FP/(TN+FP) = Type I Error, False Pos. Rate, 1-Specitivity.
     // TN/(TN+FP) = Specitivity 
     // FN/(FN+TP) = Type II Error  **** = miss detection rate ***
     // TP/(FN+TP) = Sensitiviy, Recall, True Pos. Rate 
@@ -354,31 +331,29 @@ int main(int argc, char **argv){
 
     //printf("SNP_FA   : %lf\n", 1.0*calledfalsesnps/calledtruesnps);
     
-    //printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps); // Type II Error
-    // 
-    //printf("INDEL_FA : %lf\n", 1.0*sum[2]/sum[1]);
-    
-    // False Pos. Rate: FP/(TN+FP). Type I Error, 1-Specificity
-    //printf("INDEL_MD : %lf\n", 1.0*(sum[0]-sum[1])/sum[0]);
+    printf("SNP_Sensitivity  : %lf\n", 1.0*concord.snp/totaltrue.snp); 
+    printf("INDEL_Sensitivity: %lf\n", 1.0*sum[1]/sum[0]);
+    printf("SNP_FalDisRate   : %lf\n", 1.0*(discord.snp+pconcord.snp)/(discord.snp+pconcord.snp+concord.snp));
+    printf("INDEL_FalDisRate : %lf\n", 1.0*(sum[3]+sum[2])/(sum[3]+sum[2]+sum[1]));
+
 
     printf("=============== Counts ==============\n"); 
-    printf("totaltrue\tdetected\tmissed\tfalsecalls(# with correct position)\n");
-    printf("SNP: \n");
-    printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.snp, concord.snp, missing.snp, discord.snp+pconcord.snp, pconcord.snp);
-    printf("INDEL: \n");
-    printf("%d\t%d\t%d\t%d\n", sum[0], sum[1], sum[2], sum[0] - sum[1]);
-    printf("INDEL breakdown: \n");
-    printf("insertion length 1-10\n");
+    printf("totaltrue/concordance/p-concordance/discordance/missing\n");
+    printf("---------------- SNP ----------------\n");
+    printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.snp, concord.snp, pconcord.snp, discord.snp, missing.snp);
+    printf("--------------- INDEL ----------------\n");
+    printf("%d\t%d\t%d\t%d\t%d\n", sum[0], sum[1], sum[2], sum[3], sum[4]);
+    printf("-------------- Breakdown --------------\n");
+    printf("----------insertion length 1-10--------\n");
     for(i = 0; i <= 9; i++)
-        printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.indel[i], concord.indel[i], missing.indel[i], discord.indel[i]+pconcord.indel[i], pconcord.indel[i]);
-    printf("deletion length 1-10\n");
+        printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.indel[i], concord.indel[i], pconcord.indel[i], discord.indel[i], missing.indel[i]);
+    printf("----------deletion length 1-10---------\n");
     for(i = 10; i <= 19; i++)
-        printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.indel[i], concord.indel[i], missing.indel[i], discord.indel[i]+pconcord.indel[i], pconcord.indel[i]);
+        printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.indel[i], concord.indel[i], pconcord.indel[i], discord.indel[i], missing.indel[i]);
     printf("* Duplicates : %d\n", duplicate);
 
     // END REPORT
     // ============
-
 
     bcf_hdr_destroy(ih);
     bcf_hdr_destroy(th);
