@@ -320,8 +320,9 @@ int main(int argc, char **argv){
     for(i = 0; i < 20; i++){    
         sum[0] += totaltrue.indel[i];
         sum[1] += concord.indel[i];
-        sum[2] += discord.indel[i];
         sum[2] += pconcord.indel[i];
+        sum[3] += discord.indel[i];
+        sum[4] += missing.indel[i];
     }
 
 
@@ -344,7 +345,7 @@ int main(int argc, char **argv){
     // calledfalse = FP
     // missed      = FN
 
-    // FP/(TN+FP) = Type I Error, False Pos. Rate
+    // FP/(TN+FP) = Type I Error, False Pos. Rate, 1-Specitivity.
     // TN/(TN+FP) = Specitivity 
     // FN/(FN+TP) = Type II Error  **** = miss detection rate ***
     // TP/(FN+TP) = Sensitiviy, Recall, True Pos. Rate 
@@ -354,31 +355,29 @@ int main(int argc, char **argv){
 
     //printf("SNP_FA   : %lf\n", 1.0*calledfalsesnps/calledtruesnps);
     
-    //printf("SNP_MD   : %lf\n", 1.0*(totaltruesnps-calledtruesnps)/totaltruesnps); // Type II Error
-    // 
-    //printf("INDEL_FA : %lf\n", 1.0*sum[2]/sum[1]);
-    
-    // False Pos. Rate: FP/(TN+FP). Type I Error, 1-Specificity
-    //printf("INDEL_MD : %lf\n", 1.0*(sum[0]-sum[1])/sum[0]);
+    printf("SNP_Sensitivity  : %lf\n", 1.0*concord.snp/totaltrue.snp); 
+    printf("INDEL_Sensitivity: %lf\n", 1.0*sum[1]/sum[0]);
+    printf("SNP_FalDisRate   : %lf\n", 1.0*(discord.snp+pconcord.snp)/(discord.snp+pconcord.snp+concord.snp));
+    printf("INDEL_FalDisRate : %lf\n", 1.0*(sum[3]+sum[2])/(sum[3]+sum[2]+sum[1]));
+
 
     printf("=============== Counts ==============\n"); 
-    printf("totaltrue\tdetected\tmissed\tfalsecalls(# with correct position)\n");
-    printf("SNP: \n");
-    printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.snp, concord.snp, missing.snp, discord.snp+pconcord.snp, pconcord.snp);
-    printf("INDEL: \n");
-    printf("%d\t%d\t%d\t%d\n", sum[0], sum[1], sum[2], sum[0] - sum[1]);
-    printf("INDEL breakdown: \n");
-    printf("insertion length 1-10\n");
+    printf("totaltrue/concordance/p-concordance/discordance/missed\n");
+    printf("---------------- SNP ----------------\n");
+    printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.snp, concord.snp, pconcord.snp, discord.snp, missing.snp);
+    printf("--------------- INDEL ----------------\n");
+    printf("%d\t%d\t%d\t%d\t%d\n", sum[0], sum[1], sum[2], sum[3], sum[4]);
+    printf("-------------- Breakdown --------------\n");
+    printf("----------insertion length 1-10--------\n");
     for(i = 0; i <= 9; i++)
-        printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.indel[i], concord.indel[i], missing.indel[i], discord.indel[i]+pconcord.indel[i], pconcord.indel[i]);
-    printf("deletion length 1-10\n");
+        printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.indel[i], concord.indel[i], pconcord.indel[i], discord.indel[i], missing.indel[i]);
+    printf("----------deletion length 1-10---------\n");
     for(i = 10; i <= 19; i++)
-        printf("%d\t%d\t%d\t%d(%d)\n", totaltrue.indel[i], concord.indel[i], missing.indel[i], discord.indel[i]+pconcord.indel[i], pconcord.indel[i]);
+        printf("%d\t%d\t%d\t%d\t%d\n", totaltrue.indel[i], concord.indel[i], pconcord.indel[i], discord.indel[i], missing.indel[i]);
     printf("* Duplicates : %d\n", duplicate);
 
     // END REPORT
     // ============
-
 
     bcf_hdr_destroy(ih);
     bcf_hdr_destroy(th);
